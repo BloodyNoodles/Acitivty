@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 const Registration = () => {
-    // State hooks for the form
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('user');
+    const [error, setError] = useState(null);
+    const navigate = useNavigate(); // Initialize the useNavigate hook
 
-    // Registration handler
-    const handleSubmit = async (e) => {
+    // Registration handler (optional)
+    const handleRegister = async (e) => {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5000/api/register', {
@@ -19,10 +21,10 @@ const Registration = () => {
                 role,
             });
             console.log('Registration successful:', response.data);
-            // Handle successful registration, e.g., redirect or show success message
+            setError(null);
         } catch (error) {
             console.error('Registration error:', error);
-            // Handle error, e.g., show error message
+            setError('Registration failed. Please try again.');
         }
     };
 
@@ -35,17 +37,20 @@ const Registration = () => {
                 password,
             });
             console.log('Login successful:', response.data);
-            // Handle successful login, e.g., store token, redirect to dashboard
+            setError(null);
+
+            // Navigate to the Task Management App (App.jsx) after successful login
+            navigate('/');
         } catch (error) {
             console.error('Login error:', error);
-            // Handle error, e.g., show error message
+            setError('Login failed. Please try again.');
         }
     };
 
     return (
         <div>
             <h1>Register</h1>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleRegister}>
                 <input
                     type="text"
                     placeholder="Username"
@@ -92,6 +97,8 @@ const Registration = () => {
                 />
                 <button type="submit">Login</button>
             </form>
+
+            {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error */}
         </div>
     );
 };

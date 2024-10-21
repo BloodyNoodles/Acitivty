@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './app.css'
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import './App.css';
 
 const TaskManagementApp = () => {
   const [tasks, setTasks] = useState([]);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priority: '',
-    due_date: ''
+    title: "",
+    description: "",
+    priority: "medium",
+    due_date: "",
   });
   const [isEdit, setIsEdit] = useState(false);
   const [currentId, setCurrentId] = useState(null);
@@ -17,42 +17,125 @@ const TaskManagementApp = () => {
     fetchTasks();
   }, []);
 
-  // Fetch all tasks
-  const fetchTasks = async () => {
-    const response = await axios.get('http://localhost:5000/tasks');
-    setTasks(response.data);
+  // Helper function to format date to yyyy-MM-dd
+  const formatDate = (dateString) => {
+    return new Date(dateString).toISOString().split("T")[0];
   };
 
-  // Handle form submission
+  // Fetch all tasks from the server
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/tasks");
+      setTasks(response.data);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
+  };
+
+  // Handle form submission (create or update task)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isEdit) {
-      await axios.put(`http://localhost:5000/tasks/${currentId}`, formData);
-      setIsEdit(false);
-    } else {
-      await axios.post('http://localhost:5000/tasks', formData);
+    try {
+      const formDataToSend = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        due_date: formData.due_date,
+      };
+
+      if (isEdit) {
+        await axios.put(`http://localhost:5000/tasks/${currentId}`, formDataToSend);
+        setIsEdit(false);
+      } else {
+        await axios.post("http://localhost:5000/tasks", formDataToSend);
+      }
+      fetchTasks();
+      resetForm();
+    } catch (error) {
+      console.error("Error submitting task:", error);
     }
-    fetchTasks();
-    setFormData({ title: '', description: '', priority: '', due_date: '' });
   };
 
-  // Handle edit
+  // Handle task delete
+  const handleDelete = async (id) => {
+    console.log("Deleting task with ID:", id);
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      try {
+        await axios.delete(`http://localhost:5000/tasks/${id}`);
+        fetchTasks();
+      } catch (error) {
+        console.error("Error deleting task:", error);
+      }
+    }
+  };
+
+  // Handle task edit
   const handleEdit = (task) => {
-    setFormData(task);
+    setFormData({
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      due_date: formatDate(task.due_date),
+    });
     setIsEdit(true);
     setCurrentId(task.id);
   };
 
-  // Handle delete
-  const handleDelete = async (id) => {
-    await axios.delete(`http://localhost:5000/tasks/${id}`);
-    fetchTasks();
+  // Reset form to initial state
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      priority: "medium",
+      due_date: "",
+    });
   };
 
   return (
     <div className="container">
       <h1>Task Management System</h1>
+      <div className="task-table">
+        <h2>Task List</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.length === 0 ? (
+              <tr>
+                <td colSpan="5">No tasks available.</td>
+              </tr>
+            ) : (
+              tasks.map((task) => (
+                <tr key={task.id}>
+                  <td>{task.title}</td>
+                  <td>{task.description}</td>
+                  <td>{task.priority}</td>
+                  <td>{formatDate(task.due_date)}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button onClick={() => handleEdit(task)}>Edit</button>
+                      <button className="delete-btn" onClick={() => handleDelete(task.id)}>
+                        🗑
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Task Form */}
       <form onSubmit={handleSubmit}>
+        <h2>{isEdit ? "Update Task" : "Add Task"}</h2>
         <input
           type="text"
           placeholder="Task Title"
@@ -64,53 +147,22 @@ const TaskManagementApp = () => {
           placeholder="Task Description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          required
         />
         <select
           value={formData.priority}
           onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-          required
         >
-          <option value="" disabled>Select Priority</option>
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
         </select>
         <input
           type="date"
-          value={formData.due_date}
+          value={formData.due_date ? formatDate(formData.due_date) : ""}
           onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-          required
         />
-        <button type="submit">{isEdit ? 'Update Task' : 'Add Task'}</button>
+        <button type="submit">{isEdit ? "Update Task" : "Add Task"}</button>
       </form>
-
-      <h2>Task List</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Priority</th>
-            <th>Due Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task) => (
-            <tr key={task.id}>
-              <td>{task.title}</td>
-              <td>{task.description}</td>
-              <td>{task.priority}</td>
-              <td>{task.due_date}</td>
-              <td>
-                <button onClick={() => handleEdit(task)}>Edit</button>
-                <button onClick={() => handleDelete(task.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 };
