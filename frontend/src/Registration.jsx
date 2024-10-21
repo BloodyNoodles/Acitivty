@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useHistory } from 'react-router-dom';  // Import useHistory for navigation
 
 const Registration = () => {
-    // State hooks for the form
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('user');
+    const history = useHistory();  // Initialize history
 
-    // Registration handler
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -19,14 +19,11 @@ const Registration = () => {
                 role,
             });
             console.log('Registration successful:', response.data);
-            // Handle successful registration, e.g., redirect or show success message
         } catch (error) {
             console.error('Registration error:', error);
-            // Handle error, e.g., show error message
         }
     };
 
-    // Login handler
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
@@ -34,11 +31,17 @@ const Registration = () => {
                 email,
                 password,
             });
-            console.log('Login successful:', response.data);
-            // Handle successful login, e.g., store token, redirect to dashboard
+
+            const { role } = response.data;  // Assuming the backend responds with the user's role
+
+            if (role === 'admin') {
+                history.push('/adminhome');  // Redirect to admin home
+            } else if (role === 'user') {
+                history.push('/userhome');  // Redirect to user home
+            }
+
         } catch (error) {
             console.error('Login error:', error);
-            // Handle error, e.g., show error message
         }
     };
 
