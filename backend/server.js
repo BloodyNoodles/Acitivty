@@ -56,7 +56,6 @@ app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Query to get the user by email
         const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
@@ -65,9 +64,10 @@ app.post('/api/login', async (req, res) => {
 
         const user = rows[0];
 
-        // Verify password
         if (await bcrypt.compare(password, user.password)) {
-            req.user = { id: user.id, role: user.role }; // Add user info to request
+            // Store user info in session (or token) after successful login
+            req.user = { id: user.id, role: user.role };
+            req.session.user = { id: user.id, role: user.role }; // Assuming session-based login
             res.json({ id: user.id, role: user.role });
         } else {
             res.status(401).send('Invalid credentials');
@@ -82,6 +82,28 @@ app.post('/api/login', async (req, res) => {
 app.get("/api/admin", checkAdmin, (req, res) => {
     res.send("Welcome, admin!");
 });
+
+// Get user role endpoint
+app.get('/api/getUserRole', async (req, res) => {
+    try {
+        // Here, you can get the user from req.user if you use sessions or a token
+        // For example, if the user is authenticated and you have user info in req.user
+        // Assuming you're storing the user role after login in a session or token
+        
+        // Example if using sessions:
+        if (req.user) {
+            const { role } = req.user;
+            return res.json({ role });
+        }
+        
+        // If no user is logged in
+        res.status(401).json({ message: 'Not authenticated' });
+    } catch (error) {
+        console.error('Error fetching user role:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 // Get all tasks
 app.get("/tasks", async (req, res) => {

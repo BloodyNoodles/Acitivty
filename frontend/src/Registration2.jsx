@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './authcontext'; // Import useAuth to get access to authentication functions
 
 const Registration = () => {
     const [username, setUsername] = useState('');
@@ -8,9 +9,9 @@ const Registration = () => {
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('user');
     const [error, setError] = useState(null);
-    const navigate = useNavigate(); // Initialize the useNavigate hook
+    const navigate = useNavigate();
+    const { login } = useAuth(); // Get the login function from AuthContext
 
-    // Registration handler (optional)
     const handleRegister = async (e) => {
         e.preventDefault();
         try {
@@ -28,7 +29,6 @@ const Registration = () => {
         }
     };
 
-    // Login handler
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
@@ -36,11 +36,15 @@ const Registration = () => {
                 email,
                 password,
             });
-            console.log('Login successful:', response.data);
-            setError(null);
 
-            // Navigate to the Task Management App (App.jsx) after successful login
-            navigate('/');
+            // Save the role and other user data in localStorage
+            localStorage.setItem('userRole', response.data.role); // Storing user role
+            localStorage.setItem('userId', response.data.id); // Storing user ID (if needed)
+
+            console.log('Login successful:', response.data);
+            login(); // Call the login function to update the authentication state
+            setError(null);
+            navigate('/tasks'); // Navigate to the Task Management App after successful login
         } catch (error) {
             console.error('Login error:', error);
             setError('Login failed. Please try again.');

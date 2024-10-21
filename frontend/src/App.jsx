@@ -12,9 +12,21 @@ const TaskManagementApp = () => {
   });
   const [isEdit, setIsEdit] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [userRole, setUserRole] = useState(null); // Initialize as null to check loading state
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetchTasks();
+    // Check user role from localStorage when the component mounts
+    const role = localStorage.getItem('userRole'); // Retrieve the user role from localStorage
+    if (role) {
+      setUserRole(role); // Set the user role in state
+      setIsAdmin(role === "admin"); // Set isAdmin based on the user role
+    } else {
+      setUserRole('user'); // Default to 'user' if no role is found
+      setIsAdmin(false); // Ensure isAdmin is false if user is not an admin
+    }
+
+    fetchTasks(); // Fetch tasks after determining user role
   }, []);
 
   // Helper function to format date to yyyy-MM-dd
@@ -91,6 +103,11 @@ const TaskManagementApp = () => {
     });
   };
 
+  // Check if userRole is still being loaded
+  if (userRole === null) {
+    return <div>Loading...</div>; // Show a loading message or spinner while fetching the role
+  }
+
   return (
     <div className="container">
       <h1>Task Management System</h1>
@@ -103,7 +120,9 @@ const TaskManagementApp = () => {
               <th>Description</th>
               <th>Priority</th>
               <th>Due Date</th>
+              {isAdmin && (
               <th>Actions</th>
+            )}
             </tr>
           </thead>
           <tbody>
@@ -118,14 +137,20 @@ const TaskManagementApp = () => {
                   <td>{task.description}</td>
                   <td>{task.priority}</td>
                   <td>{formatDate(task.due_date)}</td>
+                  {isAdmin && (
                   <td>
                     <div className="action-buttons">
-                      <button onClick={() => handleEdit(task)}>Edit</button>
-                      <button className="delete-btn" onClick={() => handleDelete(task.id)}>
-                        🗑
-                      </button>
+                      
+                        <>
+                          <button onClick={() => handleEdit(task)}>Edit</button>
+                          <button className="delete-btn" onClick={() => handleDelete(task.id)}>
+                            🗑
+                          </button>
+                        </>
+                      
                     </div>
                   </td>
+                  )}
                 </tr>
               ))
             )}
@@ -133,36 +158,38 @@ const TaskManagementApp = () => {
         </table>
       </div>
 
-      {/* Task Form */}
-      <form onSubmit={handleSubmit}>
-        <h2>{isEdit ? "Update Task" : "Add Task"}</h2>
-        <input
-          type="text"
-          placeholder="Task Title"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          required
-        />
-        <textarea
-          placeholder="Task Description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        />
-        <select
-          value={formData.priority}
-          onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-        <input
-          type="date"
-          value={formData.due_date ? formatDate(formData.due_date) : ""}
-          onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-        />
-        <button type="submit">{isEdit ? "Update Task" : "Add Task"}</button>
-      </form>
+      {/* Conditionally render the form based on user role */}
+      {userRole === 'admin' && (
+        <form onSubmit={handleSubmit}>
+          <h2>{isEdit ? "Update Task" : "Add Task"}</h2>
+          <input
+            type="text"
+            placeholder="Task Title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            required
+          />
+          <textarea
+            placeholder="Task Description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          />
+          <select
+            value={formData.priority}
+            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+          <input
+            type="date"
+            value={formData.due_date ? formatDate(formData.due_date) : ""}
+            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+          />
+          <button type="submit">{isEdit ? "Update Task" : "Add Task"}</button>
+        </form>
+      )}
     </div>
   );
 };
